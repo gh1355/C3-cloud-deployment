@@ -20,8 +20,10 @@ const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "";
  */
 export async function getCurrentWeather(
   city: string,
-  _units: string = "metric",
+  units: string = "metric",
 ): Promise<WeatherData> {
+  void units;
+
   const response = await fetch(
     `${BACKEND_URL}/api/weather?city=${encodeURIComponent(city)}`,
   );
