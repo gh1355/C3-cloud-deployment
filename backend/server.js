@@ -70,7 +70,7 @@ function getWeatherIcon(code) {
   if ([45, 48].includes(code)) return "50d";
   if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return "10d";
   if ([71, 73, 75].includes(code)) return "13d";
-  if ([95].includes(code)) return "11d";
+  if (code === 95) return "11d";
 
   return "01d";
 }
@@ -96,7 +96,7 @@ function mapCurrentWeather(location, currentWeather) {
 
   return {
     city: location.name,
-    country: location.country,
+    country: location.country || "",
     temperature: Math.round(currentWeather.temperature),
     feelsLike: Math.round(currentWeather.temperature),
     description: getWeatherDescription(weatherCode),
@@ -191,11 +191,12 @@ app.get("/api/weather", async (req, res) => {
 app.get("/api/weather/coords", async (req, res) => {
   const lat = Number(req.query.lat);
   const lon = Number(req.query.lon);
-  const cacheKey = `weather:coords:${lat}:${lon}`;
 
   if (Number.isNaN(lat) || Number.isNaN(lon)) {
     return res.status(400).json({ error: "Invalid coordinates" });
   }
+
+  const cacheKey = `weather:coords:${lat}:${lon}`;
 
   try {
     const cached = await redis.get(cacheKey);
@@ -272,7 +273,7 @@ app.get("/api/forecast", async (req, res) => {
           latitude: location.latitude,
           longitude: location.longitude,
           daily:
-            "temperature_2m_min,temperature_2m_max,weathercode,precipitation_probability_max,windspeed_10m_max",
+            "weathercode,temperature_2m_min,temperature_2m_max,precipitation_probability_max,windspeed_10m_max",
           forecast_days: 5,
           timezone: "auto",
         },
