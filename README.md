@@ -1,14 +1,18 @@
-# 🌦 WeatherWise – CI/CD Erweiterung des C1-Projekts
+# 🌩 WeatherWise – Cloud Deployment Erweiterung des C2-Projekts
 
 ## 📌 Projektbeschreibung
 
-Dieses Projekt basiert auf dem bereits im Auftrag C1 entwickelten Projekt **WeatherWise**, einer modernen und responsiven Wetter-Web-Applikation.
-Im Rahmen von C1 wurde eine containerisierte Multi-Service-Architektur mit Docker Compose umgesetzt.
+Dieses Projekt basiert auf dem bereits in den Aufträgen C1 und C2 entwickelten Projekt **WeatherWise**, einer modernen und responsiven Wetter-Web-Applikation.
 
-Für den Auftrag C2 wurde das bestehende Projekt weiterentwickelt und um eine vollständige CI/CD-Pipeline mit GitHub Actions erweitert. Ziel war es, den bisherigen manuellen Build- und Deployment-Prozess zu automatisieren und eine reproduzierbare sowie produktionsnahe Deployment-Umgebung zu schaffen.
+Im Auftrag C1 wurde eine containerisierte Multi-Service-Architektur mit Docker Compose umgesetzt.
+Im Auftrag C2 wurde das Projekt zusätzlich um eine vollständige CI/CD-Pipeline mit GitHub Actions erweitert.
 
-Das bestehende Projekt aus C1 wurde bewusst weiterverwendet, da dadurch ein realistischer Entwicklungsprozess simuliert werden konnte:
-Eine bestehende Anwendung wird nicht neu erstellt, sondern professionell erweitert und automatisiert deployt.
+Für den Auftrag C3 wurde das bestehende Projekt erfolgreich auf eine Cloud-Plattform deployt und produktionsnah erweitert.
+
+Das Ziel bestand darin, eine reale Cloud-Deployment-Umgebung aufzubauen, in der Frontend, Backend und Redis öffentlich erreichbar, automatisiert deploybar und reproduzierbar betrieben werden können.
+
+Dabei wurde bewusst das bestehende Projekt weiterverwendet, um einen realistischen Entwicklungsprozess abzubilden:
+Eine bestehende Anwendung wird schrittweise erweitert, automatisiert und produktionsnah in die Cloud deployt.
 
 ---
 
@@ -16,330 +20,387 @@ Eine bestehende Anwendung wird nicht neu erstellt, sondern professionell erweite
 
 Die Anwendung dient dazu, aktuelle Wetterdaten und Vorhersagen für beliebige Städte weltweit bereitzustellen.
 
-Zusätzlich bestand das Ziel darin, moderne DevOps- und Deployment-Praktiken umzusetzen:
+Zusätzlich bestand das Ziel darin, moderne Cloud- und Deployment-Praktiken umzusetzen:
 
-* Containerisierung mit Docker
-* Multi-Service-Architektur
-* Reverse Proxy mit Nginx
-* Caching mit Redis
-* Automatisierte CI/CD-Pipeline
-* Automatisierte Docker-Builds
-* Veröffentlichung von Container-Images in einer Registry
-* Nutzung von GitHub Actions
-* Reproduzierbare Deployments
+- Cloud Deployment mit Railway
+- Public Hosting der Anwendung
+- Deployment einer Multi-Service-Architektur
+- Backend API mit Redis-Caching
+- Reverse Proxy mit Nginx
+- Automatische Deployments über GitHub
+- Health Checks
+- Reproduzierbare Cloud-Deployments
+- Persistente Service-Kommunikation
+- Produktivnahe Infrastruktur
+
+---
+
+# ☁️ Verwendete Cloud-Plattform
+
+Für das Cloud Deployment wurde **Railway** verwendet.
+
+## Gründe für die Wahl von Railway
+
+- Einfache Integration mit GitHub
+- Automatische Deployments
+- Unterstützung für Docker-basierte Projekte
+- Einfache Verwaltung mehrerer Services
+- Öffentliche Deployment-URLs
+- Gute Übersicht über Logs und Deployments
+- Integrierte Environment Variables
 
 ---
 
 # 🏗 Architektur
 
-Die Anwendung besteht aus mehreren Services:
+Die Anwendung besteht aus mehreren Cloud-Services:
 
 | Service  | Beschreibung                                 |
 | -------- | -------------------------------------------- |
 | Frontend | React/Vite SPA ausgeliefert über Nginx       |
 | Backend  | Node.js API zur Verarbeitung der Wetterdaten |
 | Cache    | Redis zur Zwischenspeicherung                |
-| CI/CD    | GitHub Actions Workflow zur Automatisierung  |
+| Cloud    | Railway Hosting Plattform                    |
+
+---
+
+# 🖼 Architekturdiagramm
+
+```text
+┌──────────────────────┐
+│      Frontend        │
+│ React / Vite / Nginx │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│      Backend API     │
+│   Node.js / Express  │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│      Redis Cache     │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│    Open-Meteo API    │
+└──────────────────────┘
+```
 
 ---
 
 # 🔗 Datenfluss
 
 ```text
-User → Frontend (Nginx)
-        ↓
-     Backend API
-        ↓
-      Redis Cache
-        ↓
- External Weather API
+User
+  ↓
+Frontend (Nginx / Railway)
+  ↓
+Backend API
+  ↓
+Redis Cache
+  ↓
+Open-Meteo API
 ```
 
 ---
 
-# ⚙️ Erweiterung von C1 zu C2
+# 🚀 Cloud Deployment Architektur
 
-Im Auftrag C1 lag der Fokus hauptsächlich auf:
+Die Anwendung wurde in Railway als Multi-Service-Projekt umgesetzt.
 
-* Dockerisierung
-* Multi-Service-Deployment
-* Redis-Caching
-* Docker Compose
-* Service-Kommunikation
+## Enthaltene Services
 
-Im Auftrag C2 wurde das Projekt um professionelle CI/CD-Funktionalitäten erweitert.
+| Service          | Funktion                      |
+| ---------------- | ----------------------------- |
+| Frontend Service | Auslieferung der SPA          |
+| Backend Service  | Verarbeitung der API-Anfragen |
+| Redis Service    | Caching der Wetterdaten       |
 
-Dabei wurden folgende Erweiterungen implementiert:
-
-* GitHub Actions Workflow
-* Automatisierte Tests
-* Automatisierter Docker-Build
-* Automatisierter Push in eine Container Registry
-* Docker Layer Caching
-* Dependency Caching
-* Image Tagging mit SHA
-* Sichere Nutzung von GitHub Secrets
+Alle Services kommunizieren innerhalb des Railway-Netzwerks miteinander.
 
 ---
 
-# 🔄 CI/CD Pipeline Übersicht
+# 🌐 Öffentliche Endpoints
 
-Die Pipeline wird automatisch bei jedem Push auf den `main`-Branch ausgeführt.
-
-## Ablauf der Pipeline
+## Frontend
 
 ```text
-Push auf main
-    ↓
-Test Stage
-    ↓
-Docker Build Stage
-    ↓
-Push Stage (GHCR)
+https://c3-cloud-deployment-production.up.railway.app
 ```
 
-Wenn eine Stage fehlschlägt, wird die Pipeline sofort gestoppt und kein Image veröffentlicht.
+## Backend Health Check
 
----
-
-# 🧪 Test Stage
-
-In der Test-Stage werden automatische Qualitätsprüfungen durchgeführt.
-
-## Verwendete Befehle
-
-```bash
-npm ci
-npm run lint
-npm run build
+```text
+/health
 ```
 
-### Ziel der Test-Stage
+Vollständige URL:
 
-* Überprüfung der Codequalität
-* Erkennung von Syntaxfehlern
-* Sicherstellung eines erfolgreichen Produktions-Builds
+```text
+https://laudable-eagerness-production-0b03.up.railway.app/health
+```
 
-Für die Qualitätsprüfung wird ESLint verwendet.
+Der Endpoint überprüft:
 
----
-
-# 🐳 Docker Build Stage
-
-Nach erfolgreichem Test wird automatisch ein Docker-Image erzeugt.
-
-Das Projekt verwendet ein Multi-Stage-Dockerfile:
-
-## Builder Stage
-
-* Installation der Dependencies
-* Erstellen des Production-Builds
-
-## Runtime Stage
-
-* Auslieferung der statischen Dateien über Nginx
-* Minimierung der finalen Image-Größe
-
----
-
-# 📦 Container Registry
-
-Als Container Registry wurde die **GitHub Container Registry (GHCR)** verwendet.
-
-## Gründe für diese Wahl
-
-* Direkte Integration in GitHub
-* Keine zusätzliche Registry notwendig
-* Einfache Authentifizierung mit `GITHUB_TOKEN`
-* Gute Integration mit GitHub Actions
-
-Das fertige Image wird automatisch nach erfolgreichem Build veröffentlicht.
-
----
-
-# 🏷 Tagging Strategie
-
-Jedes Docker-Image erhält zwei Tags:
-
-| Tag          | Beschreibung                    |
-| ------------ | ------------------------------- |
-| latest       | Aktuellste stabile Version      |
-| sha-<commit> | Eindeutige Build-Identifikation |
+- Backend-Verfügbarkeit
+- Redis-Verbindung
+- Service-Status
 
 Beispiel:
 
-```text
-latest
-sha-a1b2c3d
+```json
+{
+  "status": "healthy",
+  "redis": "connected"
+}
 ```
-
-Dadurch bleibt jeder Build nachvollziehbar und reproduzierbar.
 
 ---
 
-# 🔐 Secrets Management
+## Weather API Endpoint
+
+```text
+/api/weather?city=Zurich
+```
+
+Vollständige URL:
+
+```text
+https://laudable-eagerness-production-0b03.up.railway.app/api/weather?city=Zurich
+```
+
+Der Endpoint liefert aktuelle Wetterdaten als JSON zurück.
+
+---
+
+# 🔄 Deployment Prozess
+
+Das Projekt ist direkt mit GitHub verbunden.
+
+## Deployment Ablauf
+
+```text
+Git Push
+   ↓
+GitHub Repository
+   ↓
+Automatisches Railway Deployment
+   ↓
+Build
+   ↓
+Container Start
+   ↓
+Öffentliche Bereitstellung
+```
+
+Jeder Push auf den `main`-Branch startet automatisch ein neues Cloud Deployment.
+
+---
+
+# 🐳 Docker Integration
+
+Das Projekt verwendet weiterhin Docker-basierte Deployments.
+
+## Frontend
+
+- Multi-Stage Docker Build
+- Production Build mit Vite
+- Auslieferung über Nginx
+
+## Backend
+
+- Node.js Express API
+- Redis-Verbindung
+- Health Endpoint
+- JSON Logging
+
+---
+
+# ⚡ Redis Caching
+
+Redis wird verwendet, um Wetterdaten temporär zwischenzuspeichern.
+
+## Vorteile
+
+- Reduzierung externer API-Aufrufe
+- Schnellere Antwortzeiten
+- Geringere Last auf der Wetter-API
+- Verbesserte Performance
+
+---
+
+# 🔧 Konfigurationsbeispiele
+
+## Nginx Reverse Proxy
+
+```nginx
+location /api/ {
+    proxy_pass https://backend-url/api/;
+}
+```
+
+Dieser Reverse Proxy leitet API-Anfragen automatisch vom Frontend an das Backend weiter.
+
+---
+
+## Health Endpoint
+
+```js
+app.get("/health", async (req, res) => {
+  await redis.ping();
+  res.status(200).json({ status: "healthy" });
+});
+```
+
+Der Endpoint dient zur Überwachung der Verfügbarkeit des Backends und der Redis-Verbindung.
+
+---
+
+# 🔐 Environment Variables
 
 Sensitive Daten werden nicht im Repository gespeichert.
 
-Die Pipeline verwendet:
+Verwendete Variablen:
 
 ```text
-${{ secrets.GITHUB_TOKEN }}
+REDIS_URL
+CACHE_TTL_SECONDS
+VITE_API_BASE_URL
+PORT
 ```
 
-Dadurch bleiben Zugangsdaten geschützt und werden erst zur Laufzeit in die Pipeline eingefügt.
-
-Es befinden sich keine Credentials im Quellcode oder Repository.
+Alle Variablen werden direkt in Railway verwaltet.
 
 ---
 
-# ⚡ Caching
+# 🩺 Health Checks
 
-Zur Optimierung der Pipeline wurden mehrere Caching-Mechanismen verwendet.
-
-## Dependency Cache
-
-```yaml
-cache: npm
-```
-
-Dadurch müssen Dependencies nicht bei jedem Build erneut heruntergeladen werden.
-
----
-
-## Docker Layer Cache
-
-```yaml
-cache-from: type=gha
-cache-to: type=gha,mode=max
-```
-
-Dadurch werden bereits gebaute Docker-Layer wiederverwendet.
-
-Das reduziert die Build-Zeit deutlich.
-
----
-
-# 🚀 GitHub Actions Workflow
-
-Der Workflow befindet sich unter:
+Das Backend besitzt einen eigenen Health-Endpoint:
 
 ```text
-.github/workflows/ci-cd.yml
+/health
 ```
 
-## Verwendete Trigger
+Dieser wird verwendet für:
 
-| Trigger           | Beschreibung          |
-| ----------------- | --------------------- |
-| push auf main     | Vollständige Pipeline |
-| workflow_dispatch | Manueller Start       |
-
----
-
-# ⚙️ Setup Anleitung
-
-## Voraussetzungen
-
-* Docker installiert
-* Git installiert
-* GitHub Account
-* Node.js installiert
-
----
-
-## Projekt starten
-
-```bash
-docker compose up --build
-```
-
----
-
-## Lokale Entwicklung
-
-```bash
-npm install
-npm run dev
-```
+- Service-Monitoring
+- Verfügbarkeitsprüfung
+- Railway Deployment Checks
+- Redis-Verbindungsprüfung
 
 ---
 
 # 📂 Projektstruktur
 
 ```text
-.github/
- └── workflows/
-      └── ci-cd.yml
-
 backend/
-public/
 src/
+public/
 
 Dockerfile
 docker-compose.yml
 nginx.conf
 
-package.json
 README.md
+package.json
 ```
+
+---
+
+# ⚙️ Reproduzierbare Setup-Schritte
+
+## Repository klonen
+
+```bash
+git clone https://github.com/gh1355/DEP-Challenges.git
+```
+
+## Dependencies installieren
+
+```bash
+npm install
+```
+
+## Docker Deployment lokal starten
+
+```bash
+docker compose up --build
+```
+
+## Railway Deployment
+
+1. GitHub Repository mit Railway verbinden
+2. Frontend-, Backend- und Redis-Service erstellen
+3. Environment Variables konfigurieren
+4. Deployment starten
+5. Öffentliche URL testen
 
 ---
 
 # 🧠 Architektur-Entscheidungen
 
-## Warum GitHub Actions?
+## Warum Railway?
 
-GitHub Actions bietet eine direkte Integration in GitHub-Repositories und ermöglicht einfache sowie automatisierte CI/CD-Workflows.
-
----
-
-## Warum GHCR?
-
-GHCR vereinfacht die Verwaltung von Docker-Images und benötigt keine externe Registry.
-
----
-
-## Warum Multi-Stage Docker Builds?
-
-Dadurch wird die Größe des finalen Images reduziert und die Sicherheit verbessert.
-
----
+Railway ermöglicht schnelle und einfache Cloud-Deployments mit automatischer GitHub-Integration und guter Unterstützung für Docker-Projekte.
 
 ## Warum Redis?
 
 Redis reduziert externe API-Aufrufe und verbessert die Performance der Anwendung.
 
+## Warum Nginx?
+
+Nginx dient als Reverse Proxy und liefert die React SPA effizient aus.
+
+## Warum Docker?
+
+Docker ermöglicht reproduzierbare und portable Deployments.
+
+## Warum Open-Meteo?
+
+Open-Meteo wurde gewählt, da die API kostenlos nutzbar ist und aktuelle Wetterdaten ohne komplexe Authentifizierung bereitstellt.
+
 ---
 
 # 🧠 Reflexion
 
-Während der Umsetzung von C2 habe ich gelernt:
+Während der Umsetzung von C3 habe ich gelernt:
 
-* Aufbau automatisierter CI/CD-Pipelines
-* Nutzung von GitHub Actions
-* Automatisiertes Container-Building
-* Veröffentlichung von Images in einer Registry
-* Verwendung von Docker Layer Caching
-* Nutzung von GitHub Secrets
-* Strukturierung professioneller Deployment-Prozesse
+- Aufbau cloudbasierter Deployments
+- Nutzung von Railway
+- Deployment mehrerer Services
+- Verwaltung von Environment Variables
+- Nutzung von Redis in der Cloud
+- Arbeiten mit Health Checks
+- Troubleshooting von Cloud Deployments
+- Verwaltung produktionsnaher Infrastruktur
 
-Besonders hilfreich war die Kombination aus dem bestehenden C1-Projekt und den neuen CI/CD-Komponenten, da dadurch ein realistischer Entwicklungsprozess simuliert wurde.
+Besonders hilfreich war die Kombination aus:
 
-Rückblickend würde ich zusätzlich:
+- Docker
+- GitHub
+- Railway
+- Redis
 
-* Unit Tests integrieren
-* Automatische Deployments in die Cloud hinzufügen
-* Semantic Versioning ergänzen
-* Monitoring und Logging erweitern
+Dadurch konnte ein realistisches Cloud-Deployment umgesetzt werden.
+
+---
+
+# ⚠️ Bekannte Einschränkungen
+
+Einige zusätzliche Wetterwerte wie Luftfeuchtigkeit, Druck oder Sichtbarkeit werden aktuell nur teilweise unterstützt, da die verwendete Wetter-API diese Werte nicht vollständig im aktuellen Wetterobjekt bereitstellt.
+
+Die Kernfunktionen der Anwendung funktionieren jedoch vollständig.
 
 ---
 
 # 📜 KI-Unterstützung
 
-Für die Erstellung einzelner Konfigurationsbestandteile und zur Unterstützung bei der Strukturierung der CI/CD-Pipeline wurden KI-Tools verwendet.
+Für die Erstellung einzelner Konfigurationen, Deployment-Setups sowie zur Unterstützung beim Troubleshooting wurden KI-Tools verwendet.
 
-Alle verwendeten Konfigurationen und Workflows wurden verstanden, angepasst und eigenständig getestet.
+Alle verwendeten Konfigurationen und Deployments wurden verstanden, angepasst und eigenständig getestet.
 
 ---
 
