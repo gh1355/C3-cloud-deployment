@@ -16,10 +16,11 @@ const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "";
  * Holt die aktuellen Wetterdaten über das eigene Backend.
  * Dadurch läuft die Hauptfunktion der App über Backend + Redis Cache.
  * @param city - Name der Stadt
+ * @param units - Einheit, wird aus Kompatibilitätsgründen behalten
  */
 export async function getCurrentWeather(
   city: string,
-  units: string = "metric",
+  _units: string = "metric",
 ): Promise<WeatherData> {
   const response = await fetch(
     `${BACKEND_URL}/api/weather?city=${encodeURIComponent(city)}`,
