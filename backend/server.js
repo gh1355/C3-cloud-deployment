@@ -6,7 +6,8 @@ import { createClient } from "redis";
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-const REDIS_URL = process.env.REDIS_URL || "redis://cache:6379";
+const REDIS_URL =
+  process.env.REDIS_URL || "redis://redis.railway.internal:6379";
 const CACHE_TTL_SECONDS = Number(process.env.CACHE_TTL_SECONDS || 300);
 
 app.use(cors());
