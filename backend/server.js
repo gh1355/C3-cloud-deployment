@@ -91,27 +91,103 @@ async function getLocationByCity(city) {
   return geoResponse.data.results?.[0];
 }
 
-function mapCurrentWeather(location, currentWeather) {
-  const weatherCode = currentWeather.weathercode;
+function getUnitParams(units) {
+  const isImperial = units === "imperial";
+  return {
+    temperature_unit: isImperial ? "fahrenheit" : "celsius",
+    wind_speed_unit: isImperial ? "mph" : "ms",
+  };
+}
+
+async function fetchCurrentWeather(latitude, longitude, units) {
+  const unitParams = getUnitParams(units);
+
+  const response = await axios.get("https://api.open-meteo.com/v1/forecast", {
+    params: {
+      latitude,
+      longitude,
+      current:
+        "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m",
+      hourly: "visibility",
+      daily: "sunrise,sunset",
+      timezone: "auto",
+      forecast_days: 1,
+      ...unitParams,
+    },
+  });
+
+  return response.data;
+}
+
+function pickHourlyValue(hourly, key, currentTime) {
+  if (!hourly || !Array.isArray(hourly.time) || !Array.isArray(hourly[key])) {
+    return null;
+  }
+
+  const index = hourly.time.indexOf(currentTime);
+
+  if (index >= 0) {
+    return hourly[key][index];
+  }
+
+  const targetMs = new Date(currentTime).getTime();
+  let bestIndex = 0;
+  let bestDelta = Infinity;
+
+  for (let i = 0; i < hourly.time.length; i++) {
+    const delta = Math.abs(new Date(hourly.time[i]).getTime() - targetMs);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      bestIndex = i;
+    }
+  }
+
+  return hourly[key][bestIndex] ?? null;
+}
+
+function localTimeToUnix(localTimeString, utcOffsetSeconds) {
+  if (!localTimeString) return 0;
+  // Open-Meteo returns local time strings without timezone designator when
+  // timezone=auto. Parse as UTC then subtract the location's offset to get
+  // the true Unix timestamp.
+  const asUtc = Date.parse(`${localTimeString}Z`);
+  if (Number.isNaN(asUtc)) return 0;
+  return Math.floor((asUtc - utcOffsetSeconds * 1000) / 1000);
+}
+
+function mapCurrentWeather(location, weatherData) {
+  const current = weatherData.current || {};
+  const daily = weatherData.daily || {};
+  const weatherCode = current.weather_code;
+  const currentTime = current.time;
+  const utcOffsetSeconds = weatherData.utc_offset_seconds ?? 0;
+
+  const visibilityMeters = pickHourlyValue(
+    weatherData.hourly,
+    "visibility",
+    currentTime,
+  );
 
   return {
     city: location.name,
     country: location.country || "",
-    temperature: Math.round(currentWeather.temperature),
-    feelsLike: Math.round(currentWeather.temperature),
+    temperature: Math.round(current.temperature_2m ?? 0),
+    feelsLike: Math.round(
+      current.apparent_temperature ?? current.temperature_2m ?? 0,
+    ),
     description: getWeatherDescription(weatherCode),
     icon: getWeatherIcon(weatherCode),
-    humidity: 0,
-    windSpeed: currentWeather.windspeed,
-    windDeg: currentWeather.winddirection ?? 0,
-    pressure: 0,
-    visibility: 0,
-    clouds: 0,
-    sunrise: 0,
-    sunset: 0,
+    humidity: Math.round(current.relative_humidity_2m ?? 0),
+    windSpeed: current.wind_speed_10m ?? 0,
+    windDeg: current.wind_direction_10m ?? 0,
+    pressure: Math.round(current.pressure_msl ?? 0),
+    visibility: visibilityMeters ?? 0,
+    clouds: Math.round(current.cloud_cover ?? 0),
+    sunrise: localTimeToUnix(daily.sunrise?.[0], utcOffsetSeconds),
+    sunset: localTimeToUnix(daily.sunset?.[0], utcOffsetSeconds),
     lat: location.latitude,
     lon: location.longitude,
-    dt: Math.floor(new Date(currentWeather.time).getTime() / 1000),
+    dt: localTimeToUnix(currentTime, utcOffsetSeconds),
   };
 }
 
@@ -135,13 +211,14 @@ app.get("/health", async (req, res) => {
 
 app.get("/api/weather", async (req, res) => {
   const city = String(req.query.city || "Zurich");
-  const cacheKey = `weather:${city.toLowerCase()}`;
+  const units = req.query.units === "imperial" ? "imperial" : "metric";
+  const cacheKey = `weather:${units}:${city.toLowerCase()}`;
 
   try {
     const cached = await redis.get(cacheKey);
 
     if (cached) {
-      log("info", "Weather served from cache", { city });
+      log("info", "Weather served from cache", { city, units });
       return res.json(JSON.parse(cached));
     }
 
@@ -152,21 +229,13 @@ app.get("/api/weather", async (req, res) => {
       return res.status(404).json({ error: "City not found" });
     }
 
-    const weatherResponse = await axios.get(
-      "https://api.open-meteo.com/v1/forecast",
-      {
-        params: {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          current_weather: true,
-        },
-      },
+    const weatherData = await fetchCurrentWeather(
+      location.latitude,
+      location.longitude,
+      units,
     );
 
-    const result = mapCurrentWeather(
-      location,
-      weatherResponse.data.current_weather,
-    );
+    const result = mapCurrentWeather(location, weatherData);
 
     await redis.set(cacheKey, JSON.stringify(result), {
       EX: CACHE_TTL_SECONDS,
@@ -174,6 +243,7 @@ app.get("/api/weather", async (req, res) => {
 
     log("info", "Weather fetched from Open-Meteo", {
       city: location.name,
+      units,
       cacheTtlSeconds: CACHE_TTL_SECONDS,
     });
 
@@ -191,31 +261,23 @@ app.get("/api/weather", async (req, res) => {
 app.get("/api/weather/coords", async (req, res) => {
   const lat = Number(req.query.lat);
   const lon = Number(req.query.lon);
+  const units = req.query.units === "imperial" ? "imperial" : "metric";
 
   if (Number.isNaN(lat) || Number.isNaN(lon)) {
     return res.status(400).json({ error: "Invalid coordinates" });
   }
 
-  const cacheKey = `weather:coords:${lat}:${lon}`;
+  const cacheKey = `weather:coords:${units}:${lat}:${lon}`;
 
   try {
     const cached = await redis.get(cacheKey);
 
     if (cached) {
-      log("info", "Coordinate weather served from cache", { lat, lon });
+      log("info", "Coordinate weather served from cache", { lat, lon, units });
       return res.json(JSON.parse(cached));
     }
 
-    const weatherResponse = await axios.get(
-      "https://api.open-meteo.com/v1/forecast",
-      {
-        params: {
-          latitude: lat,
-          longitude: lon,
-          current_weather: true,
-        },
-      },
-    );
+    const weatherData = await fetchCurrentWeather(lat, lon, units);
 
     const location = {
       name: "Aktueller Standort",
@@ -224,16 +286,17 @@ app.get("/api/weather/coords", async (req, res) => {
       longitude: lon,
     };
 
-    const result = mapCurrentWeather(
-      location,
-      weatherResponse.data.current_weather,
-    );
+    const result = mapCurrentWeather(location, weatherData);
 
     await redis.set(cacheKey, JSON.stringify(result), {
       EX: CACHE_TTL_SECONDS,
     });
 
-    log("info", "Coordinate weather fetched from Open-Meteo", { lat, lon });
+    log("info", "Coordinate weather fetched from Open-Meteo", {
+      lat,
+      lon,
+      units,
+    });
 
     res.json(result);
   } catch (error) {
@@ -249,13 +312,14 @@ app.get("/api/weather/coords", async (req, res) => {
 
 app.get("/api/forecast", async (req, res) => {
   const city = String(req.query.city || "Zurich");
-  const cacheKey = `forecast:${city.toLowerCase()}`;
+  const units = req.query.units === "imperial" ? "imperial" : "metric";
+  const cacheKey = `forecast:${units}:${city.toLowerCase()}`;
 
   try {
     const cached = await redis.get(cacheKey);
 
     if (cached) {
-      log("info", "Forecast served from cache", { city });
+      log("info", "Forecast served from cache", { city, units });
       return res.json(JSON.parse(cached));
     }
 
@@ -276,6 +340,7 @@ app.get("/api/forecast", async (req, res) => {
             "weathercode,temperature_2m_min,temperature_2m_max,precipitation_probability_max,windspeed_10m_max",
           forecast_days: 5,
           timezone: "auto",
+          ...getUnitParams(units),
         },
       },
     );
@@ -318,13 +383,14 @@ app.get("/api/forecast", async (req, res) => {
 
 app.get("/api/hourly", async (req, res) => {
   const city = String(req.query.city || "Zurich");
-  const cacheKey = `hourly:${city.toLowerCase()}`;
+  const units = req.query.units === "imperial" ? "imperial" : "metric";
+  const cacheKey = `hourly:${units}:${city.toLowerCase()}`;
 
   try {
     const cached = await redis.get(cacheKey);
 
     if (cached) {
-      log("info", "Hourly forecast served from cache", { city });
+      log("info", "Hourly forecast served from cache", { city, units });
       return res.json(JSON.parse(cached));
     }
 
@@ -344,6 +410,7 @@ app.get("/api/hourly", async (req, res) => {
           hourly: "temperature_2m,weathercode,precipitation_probability",
           forecast_days: 2,
           timezone: "auto",
+          ...getUnitParams(units),
         },
       },
     );
